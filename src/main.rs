@@ -19,6 +19,7 @@ type Handler = Arc<dyn Fn(Request<Incoming>) -> BoxFuture + Send + Sync>;
 trait IntoResponse {
     fn into_response(self) -> Response<ResponseBody>;
 }
+
 impl IntoResponse for Response<ResponseBody> {
     fn into_response(self) -> Response<ResponseBody> {
         self
