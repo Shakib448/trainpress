@@ -41,7 +41,37 @@ impl App {
         Fut: Future<Output = Response<ResponseBody>> + Send + 'static,
     {
         let handler = Arc::new(move |req| Box::pin(handler(req)) as BoxFuture);
-        self.routes.insert((Method::GET, path.to_string()), handler);
+        self.routes
+            .insert((Method::POST, path.to_string()), handler);
+    }
+
+    fn put<F, Fut>(&mut self, path: &str, handler: F)
+    where
+        F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Response<ResponseBody>> + Send + 'static,
+    {
+        let handler = Arc::new(move |req| Box::pin(handler(req)) as BoxFuture);
+        self.routes.insert((Method::PUT, path.to_string()), handler);
+    }
+
+    fn patch<F, Fut>(&mut self, path: &str, handler: F)
+    where
+        F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Response<ResponseBody>> + Send + 'static,
+    {
+        let handler = Arc::new(move |req| Box::pin(handler(req)) as BoxFuture);
+        self.routes
+            .insert((Method::PATCH, path.to_string()), handler);
+    }
+
+    fn delete<F, Fut>(&mut self, path: &str, handler: F)
+    where
+        F: Fn(Request<Incoming>) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Response<ResponseBody>> + Send + 'static,
+    {
+        let handler = Arc::new(move |req| Box::pin(handler(req)) as BoxFuture);
+        self.routes
+            .insert((Method::DELETE, path.to_string()), handler);
     }
 
     async fn listen(self, addr: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -110,6 +140,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     app.get("/", hello);
     app.get("/users", users);
     app.post("/post", users);
+    app.patch("/patch", users);
+    app.put("/put", users);
+    app.delete("/delete", users);
 
     app.listen("127.0.0.1:3000").await?;
 
