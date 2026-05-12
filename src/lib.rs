@@ -1,5 +1,6 @@
 mod app;
 mod error;
+mod extract;
 mod handler;
 mod middleware;
 mod response;
