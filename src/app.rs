@@ -108,7 +108,6 @@ where
     }
 
     pub async fn listen(self, addr: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        todo!("Sever crate need to create to solve this listen")
-        // crate::server::serve(self, addr).await
+        crate::server::serve(self, addr).await
     }
 }

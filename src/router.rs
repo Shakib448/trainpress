@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
-use hyper::Method;
-
 use crate::handler::Handler;
+use hyper::Method;
+use std::collections::HashMap;
 
 pub struct Matched {
     pub handler: Handler,
