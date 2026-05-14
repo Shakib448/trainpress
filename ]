@@ -9,7 +9,7 @@ mod server;
 
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
+use hyper::body::{Bytes, Incoming};
 use std::convert::Infallible;
 use std::pin::Pin;
 

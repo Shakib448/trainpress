@@ -1,5 +1,5 @@
 use std::convert::Infallible;
-use std::net::{Shutdown, SocketAddr};
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use hyper::service::service_fn;
@@ -12,7 +12,7 @@ use crate::app::App;
 use crate::error::AppError;
 use crate::extract::PathParams;
 use crate::handler::into_handler;
-use crate::middleware::{self, Next};
+use crate::middleware::Next;
 use crate::{Handler, Request};
 
 pub async fn serve<S>(
@@ -28,9 +28,9 @@ where
 
     let state_ext = app.state_ext();
     let router = Arc::new(app.router);
-    let middleware = Arc::new(app.middlewares);
+    let middlewares = Arc::new(app.middlewares);
 
-    let not_found: Handler = into_handler(|_req: Reqeust| async { AppError::NotFound });
+    let not_found: Handler = into_handler(|_req: Request| async { AppError::NotFound });
 
     let shutdown = shutdown_signal();
     tokio::pin!(shutdown);

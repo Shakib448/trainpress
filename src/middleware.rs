@@ -34,7 +34,7 @@ impl Middleware for Logger {
     fn call(&self, req: Request, next: Next) -> BoxFuture<Response> {
         Box::pin(async move {
             let method = req.method().clone();
-            let path = req.path().clone();
+            let path = req.uri().path().to_string();
             let start = Instant::now();
 
             let resp = next.run(req).await;
