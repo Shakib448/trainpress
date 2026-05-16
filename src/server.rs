@@ -1,12 +1,14 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use hyper::service::service_fn;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto::Builder as AutoBuilder;
 use tokio::net::TcpListener;
 use tokio::task::JoinSet;
+use tokio::time::timeout;
 
 use crate::app::App;
 use crate::error::AppError;
@@ -74,9 +76,27 @@ where
     );
     drop(listener);
 
-    while let Some(result) = connections.join_next().await {
-        if let Err(e) = result {
-            tracing::warn!(error = %e, "connection task panicked");
+    // Graceful shutdown timeout (30 seconds)
+    let graceful_timeout = Duration::from_secs(30);
+
+    match timeout(graceful_timeout, async {
+        while let Some(result) = connections.join_next().await {
+            if let Err(e) = result {
+                tracing::warn!(error = %e, "connection task panicked");
+            }
+        }
+    })
+    .await
+    {
+        Ok(_) => {
+            tracing::info!("all connections closed gracefully");
+        }
+        Err(_) => {
+            tracing::warn!(
+                remaining_connections = connections.len(),
+                "graceful shutdown timeout exceeded, forcefully closing remaining connections"
+            );
+            connections.abort_all();
         }
     }
 
