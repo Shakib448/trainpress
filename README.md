@@ -141,7 +141,7 @@ TrainPress includes several examples to get you started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/trainpress
+git clone https://github.com/Shakib448/trainpress
 cd trainpress
 
 # Run hello world example
