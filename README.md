@@ -773,7 +773,7 @@ Contributions are welcome! This project serves both as a production tool and an 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/trainpress
+git clone https://github.com/Shakib448/trainpress
 cd trainpress
 
 # Run tests
