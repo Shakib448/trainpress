@@ -88,3 +88,103 @@ impl Middleware for RequestId {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_test_handler() -> Handler {
+        Arc::new(|_req: Request| -> BoxFuture<Response> {
+            Box::pin(async move {
+                use crate::response::IntoResponse;
+                "test response".into_response()
+            })
+        })
+    }
+
+    #[test]
+    fn test_middleware_trait_exists() {
+        // Verify middleware trait compiles
+        struct TestMiddleware;
+
+        impl Middleware for TestMiddleware {
+            fn call(&self, _req: Request, _next: Next) -> BoxFuture<Response> {
+                Box::pin(async move {
+                    use crate::response::IntoResponse;
+                    hyper::StatusCode::OK.into_response()
+                })
+            }
+        }
+
+        let _mw: Box<dyn Middleware> = Box::new(TestMiddleware);
+    }
+
+    #[test]
+    fn test_next_structure() {
+        let handler = make_test_handler();
+        let middlewares: Vec<Arc<dyn Middleware>> = vec![];
+
+        let next = Next {
+            middlewares: Arc::new(middlewares),
+            handler: handler.clone(),
+            index: 0,
+        };
+
+        // Verify Next can be created
+        assert_eq!(next.index, 0);
+    }
+
+    #[test]
+    fn test_logger_exists() {
+        let _logger = Logger;
+        // Logger middleware compiles and can be instantiated
+    }
+
+    #[test]
+    fn test_request_id_exists() {
+        let _request_id = RequestId;
+        // RequestId middleware compiles and can be instantiated
+    }
+
+    #[test]
+    fn test_custom_middleware_implementation() {
+        struct CountingMiddleware {
+            _count: u32,
+        }
+
+        impl Middleware for CountingMiddleware {
+            fn call(&self, req: Request, next: Next) -> BoxFuture<Response> {
+                Box::pin(async move {
+                    // Custom middleware logic would go here
+                    next.run(req).await
+                })
+            }
+        }
+
+        let mw = CountingMiddleware { _count: 0 };
+        let _boxed: Arc<dyn Middleware> = Arc::new(mw);
+        // Custom middleware can be created and boxed
+    }
+
+    #[test]
+    fn test_middleware_vector() {
+        struct Mw1;
+        struct Mw2;
+
+        impl Middleware for Mw1 {
+            fn call(&self, req: Request, next: Next) -> BoxFuture<Response> {
+                Box::pin(async move { next.run(req).await })
+            }
+        }
+
+        impl Middleware for Mw2 {
+            fn call(&self, req: Request, next: Next) -> BoxFuture<Response> {
+                Box::pin(async move { next.run(req).await })
+            }
+        }
+
+        let middlewares: Vec<Arc<dyn Middleware>> = vec![Arc::new(Mw1), Arc::new(Mw2)];
+
+        assert_eq!(middlewares.len(), 2);
+    }
+}

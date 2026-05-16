@@ -87,3 +87,175 @@ fn plain_text(body: String, status: StatusCode) -> Response {
         .body(full(body))
         .expect("valid response")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use http_body_util::BodyExt;
+    use serde::Serialize;
+
+    #[derive(Serialize)]
+    struct TestData {
+        name: String,
+        count: i32,
+    }
+
+    #[tokio::test]
+    async fn test_string_into_response() {
+        let response = "Hello, World!".to_string().into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("content-type").unwrap(),
+            "text/plain; charset=utf-8"
+        );
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.as_ref(), b"Hello, World!");
+    }
+
+    #[tokio::test]
+    async fn test_str_into_response() {
+        let response = "Static string".into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("content-type").unwrap(),
+            "text/plain; charset=utf-8"
+        );
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.as_ref(), b"Static string");
+    }
+
+    #[tokio::test]
+    async fn test_status_code_into_response() {
+        let response = StatusCode::CREATED.into_response();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_tuple_status_and_string() {
+        let response = (StatusCode::CREATED, "Resource created").into_response();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.as_ref(), b"Resource created");
+    }
+
+    #[tokio::test]
+    async fn test_tuple_status_and_json() {
+        let data = TestData {
+            name: "test".to_string(),
+            count: 42,
+        };
+        let response = (StatusCode::CREATED, Json(data)).into_response();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        assert_eq!(
+            response.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(body["name"], "test");
+        assert_eq!(body["count"], 42);
+    }
+
+    #[tokio::test]
+    async fn test_json_into_response() {
+        let data = TestData {
+            name: "Alice".to_string(),
+            count: 100,
+        };
+        let response = Json(data).into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(body["name"], "Alice");
+        assert_eq!(body["count"], 100);
+    }
+
+    #[tokio::test]
+    async fn test_unit_into_response() {
+        let response = ().into_response();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_result_ok_into_response() {
+        let result: Result<&str, AppError> = Ok("success");
+        let response = result.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.as_ref(), b"success");
+    }
+
+    #[tokio::test]
+    async fn test_result_err_into_response() {
+        let result: Result<&str, AppError> = Err(AppError::NotFound);
+        let response = result.into_response();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(body["error"], "not found");
+    }
+
+    #[tokio::test]
+    async fn test_json_nested_structure() {
+        #[derive(Serialize)]
+        struct User {
+            id: u64,
+            profile: Profile,
+        }
+
+        #[derive(Serialize)]
+        struct Profile {
+            email: String,
+            tags: Vec<String>,
+        }
+
+        let user = User {
+            id: 1,
+            profile: Profile {
+                email: "test@example.com".to_string(),
+                tags: vec!["rust".to_string(), "web".to_string()],
+            },
+        };
+
+        let response = Json(user).into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+
+        assert_eq!(body["id"], 1);
+        assert_eq!(body["profile"]["email"], "test@example.com");
+        assert_eq!(body["profile"]["tags"][0], "rust");
+        assert_eq!(body["profile"]["tags"][1], "web");
+    }
+}

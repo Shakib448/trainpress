@@ -2,6 +2,17 @@
 name = "trainpress"
 version = "0.1.0"
 edition = "2024"
+authors = ["TrainPress Contributors"]
+description = "A production-ready web framework powered by Hyper - one of the fastest HTTP implementations"
+repository = "https://github.com/yourusername/trainpress"
+keywords = ["web", "framework", "hyper", "async", "http"]
+categories = ["web-programming::http-server"]
+license = "MIT"
+readme = "README.md"
+
+[lib]
+name = "trainpress"
+path = "src/lib.rs"
 
 [features]
 server = []
@@ -21,3 +32,6 @@ thiserror = "1"
 matchit = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tokio-test = "0.4"

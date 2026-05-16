@@ -15,8 +15,8 @@ pub struct App<S = ()>
 where
     S: Clone + Send + Sync + 'static,
 {
-    pub(crate) router: Router,
-    pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
+    pub router: Router,
+    pub middlewares: Vec<Arc<dyn Middleware>>,
     pub(crate) state: Arc<S>,
 }
 
