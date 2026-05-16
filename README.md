@@ -23,6 +23,7 @@ TrainPress brings you **blazing-fast HTTP performance** with minimal abstraction
 - [Installation](#installation)
 - [Usage Examples](#usage-examples)
 - [Testing](#testing)
+- [Benchmarks](#benchmarks)
 - [Architecture](#architecture)
 - [Design Philosophy](#design-philosophy)
 - [Contributing](#contributing)
@@ -510,6 +511,121 @@ mod tests {
         assert!(app.router.find(&hyper::Method::GET, "/test").is_some());
     }
 }
+```
+
+---
+
+## Benchmarks
+
+TrainPress includes comprehensive benchmarks using [Criterion.rs](https://github.com/bheisler/criterion.rs) to measure and track performance across releases.
+
+### Running Benchmarks
+
+```bash
+# Run all benchmarks
+cargo bench
+
+# Run specific benchmark suite
+cargo bench --bench router_bench
+cargo bench --bench json_bench
+cargo bench --bench handler_bench
+
+# Run specific benchmark
+cargo bench --bench router_bench -- simple_route_match
+
+# Save baseline for comparison
+cargo bench -- --save-baseline main
+
+# Compare against baseline
+cargo bench -- --baseline main
+```
+
+### Benchmark Suites
+
+#### 1. Router Benchmarks (`router_bench`)
+
+Tests the performance of the routing system powered by `matchit`:
+
+- **Simple route matching** - Basic path lookup (`/`)
+- **Single parameter extraction** - Routes with one param (`/users/{id}`)
+- **Multiple parameters** - Routes with multiple params (`/users/{user_id}/posts/{post_id}`)
+- **Deep nested routes** - Complex paths (`/api/v1/users/{id}/posts/{post_id}/comments/{comment_id}`)
+- **Many routes lookup** - Performance with 100+ registered routes
+- **Route not found** - Lookup performance for non-existent routes
+- **Method routing** - Performance across different HTTP methods (GET, POST, PUT, DELETE, PATCH)
+
+#### 2. JSON Benchmarks (`json_bench`)
+
+Measures JSON serialization/deserialization performance:
+
+- **Small payload** - Simple objects (id, name)
+- **Medium payload** - Objects with multiple fields and nested data
+- **Large payload** - Complex nested structures with arrays
+- **Array serialization** - Performance with 10, 100, and 1000 items
+- **Serialization** - Converting Rust structs to JSON strings
+- **Deserialization** - Parsing JSON strings to Rust structs
+
+#### 3. Handler Benchmarks (`handler_bench`)
+
+Tests handler and application builder performance:
+
+- **Handler conversion** - Converting async functions to handler types
+- **JSON handler conversion** - Handler conversion with JSON responses
+- **State handler conversion** - Handler conversion with state access
+- **Router with handler** - Combined routing and handler lookup
+- **Many routes** - Building apps with 50+ routes
+- **App builder pattern** - Fluent API performance
+- **State initialization** - App creation with shared state
+
+### Benchmark Results
+
+Benchmark reports are generated in `target/criterion/` with:
+- **HTML reports** - Visual performance graphs
+- **Statistical analysis** - Mean, median, std deviation
+- **Regression detection** - Automatic performance regression alerts
+- **Historical comparison** - Track performance across commits
+
+### Interpreting Results
+
+```
+router/simple_route_match
+                        time:   [12.345 ns 12.567 ns 12.789 ns]
+                        change: [-5.2% -3.1% -1.0%] (p = 0.01 < 0.05)
+                        Performance has improved.
+```
+
+- **time**: Measured execution time (lower is better)
+- **change**: Performance change vs baseline
+- **Performance improved/regressed**: Statistical significance indicator
+
+### Performance Goals
+
+TrainPress aims to maintain:
+- **O(log n) routing** - Logarithmic path lookup complexity
+- **Sub-microsecond routing** - Route matching in < 1µs for typical apps
+- **Zero-copy where possible** - Minimal allocations per request
+- **Linear scaling** - Performance scales with route count efficiently
+
+### Writing Custom Benchmarks
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use trainpress::{App, Request, Json};
+
+fn my_benchmarks(c: &mut Criterion) {
+    c.bench_function("my_handler", |b| {
+        async fn handler(_req: Request) -> Json<&'static str> {
+            Json("benchmark")
+        }
+
+        b.iter(|| {
+            black_box(into_handler(handler))
+        });
+    });
+}
+
+criterion_group!(benches, my_benchmarks);
+criterion_main!(benches);
 ```
 
 ---
