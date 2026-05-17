@@ -37,6 +37,13 @@ struct ListQuery {
     limit: Option<usize>,
 }
 
+#[derive(Serialize)]
+struct ListUsersResponse {
+    data: Vec<User>,
+    count: usize,
+    total: usize,
+}
+
 async fn root(_req: Request) -> &'static str {
     "🦀 Welcome to TrainPress User CRUD API!\n\n\
      Available endpoints:\n\
@@ -55,7 +62,7 @@ async fn health(_req: Request) -> Json<serde_json::Value> {
     }))
 }
 
-async fn list_users(req: Request) -> Result<Json<Vec<User>>, AppError> {
+async fn list_users(req: Request) -> Result<Json<ListUsersResponse>, AppError> {
     // Extract query parameters
     let query: ListQuery = req.query()?;
 
@@ -63,10 +70,15 @@ async fn list_users(req: Request) -> Result<Json<Vec<User>>, AppError> {
     let state: AppState = req.state()?;
 
     let users = state.users.lock().await;
-    let limit = query.limit.unwrap_or(users.len());
-    let result: Vec<User> = users.iter().take(limit).cloned().collect();
+    let total = users.len();
+    let limit = query.limit.unwrap_or(total);
+    let data: Vec<User> = users.iter().take(limit).cloned().collect();
 
-    Ok(Json(result))
+    Ok(Json(ListUsersResponse {
+        count: data.len(),
+        total,
+        data,
+    }))
 }
 
 async fn get_user(req: Request) -> Result<Json<User>, AppError> {
