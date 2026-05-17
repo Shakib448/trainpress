@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use crate::{
+    Request,
     extract::StateExt,
-    handler::{into_handler, Handler},
+    handler::{Handler, into_handler},
     middleware::Middleware,
     response::IntoResponse,
     router::Router,
-    Request,
 };
 
 use hyper::Method;
